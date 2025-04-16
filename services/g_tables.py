@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from gspread import ValueRange, Worksheet, service_account
 from pandas import DataFrame
@@ -41,12 +42,16 @@ class GoogleTableService:
         target_frame = pd.DataFrame(
             data=table_data[1:], columns=table_data[0]
         )
-
+        target_frame.replace([None, np.nan, "", " "], np.nan, inplace=True)
         result_frame = target_frame.copy()[selected_columns]
+        logger.info(f'Стартовый "дата фрейм": {result_frame}')
         result_frame.dropna(subset=[HEADERS.get('file_link')], inplace=True)
-        result_frame = result_frame[~result_frame.notnull().all(axis=1)]
+        logger.info(f'Стартовый "дата фрейм" 2: {result_frame}')
+        result_frame = result_frame[~result_frame['Вопросы'].notnull()]
+        logger.info(f'Стартовый "дата фрейм" 3: {result_frame}')
         result_frame = result_frame[result_frame[HEADERS.get('comments')] != MESSAGES.get('dead_link_error')]
-        logger.info(f'Итоговый "дата фрейм": {result_frame}')
+        logger.info(f'Итоговый "дата фрейм": {len(result_frame)}')
+        logger.info(f'id : {result_frame[HEADERS.get('ids')].head()}')
         return result_frame
 
     def update_cell_by_row_and_column_name(

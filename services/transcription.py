@@ -20,11 +20,11 @@ class TranscriptService:
             language='ru',
         )
 
-    def _transcribe_file_from_url(self, audio_url: str) -> str:
+    async def _transcribe_file_from_url(self, audio_url: str) -> str:
         try:
             deepgram = DeepgramClient(api_key=self.api_key)
 
-            response = deepgram.listen.asyncrest.v('1').transcribe_url(
+            response = await deepgram.listen.asyncrest.v('1').transcribe_url(
                 {'url': audio_url},
                 self.transcription_options,
                 timeout=99999
@@ -37,7 +37,7 @@ class TranscriptService:
             logger.error(e)
 
     @staticmethod
-    def _extract_questions_from_data(data: str) -> list[str]:
+    async def _extract_questions_from_data(data: str) -> list[str]:
         try:
             result = list()
             sentences = re.split(r'[.!]', data)
@@ -61,7 +61,6 @@ class TranscriptService:
 
     @staticmethod
     def get_direct_url(yandex_url: str) -> str:
-
         url = settings.yandex_cloud_api_url.format(yandex_url)
         response = requests.get(url)
         if not response:
@@ -69,13 +68,13 @@ class TranscriptService:
         download_url = response.json().get('href')
         return download_url
 
-    def run_process(
+    async def run_process(
         self,
         audio_url: str | None = None
     ) -> list[str]:
         try:
-            data = self._transcribe_file_from_url(audio_url)
-            questions_pool = self._extract_questions_from_data(data)
+            data = await self._transcribe_file_from_url(audio_url)
+            questions_pool = await self._extract_questions_from_data(data)
             return questions_pool
 
         except Exception as e:
