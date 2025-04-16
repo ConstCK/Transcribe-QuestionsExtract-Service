@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     GOOGLE_TABLE_ID: str
     DEEPGRAM_API_KEY: str
 
+    @property
+    def yandex_cloud_api_url(self):
+        return 'https://cloud-api.yandex.net/v1/disk/public/resources/download?public_key={}'
+
     model_config = SettingsConfigDict(
         env_file='.env',
         env_file_encoding='utf-8',
