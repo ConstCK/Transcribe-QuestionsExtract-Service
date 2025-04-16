@@ -1,6 +1,6 @@
 import re
-
 import requests
+
 from deepgram import DeepgramClient, PrerecordedOptions
 
 from config import logger, settings

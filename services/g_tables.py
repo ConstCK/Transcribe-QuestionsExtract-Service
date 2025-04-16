@@ -28,7 +28,6 @@ class GoogleTableService:
         records = worksheet.get(columns)
         return records
 
-    # Select all rows with video links but without questions bunch
     def get_rows_without_questions(self) -> DataFrame:
         selected_columns = [
             HEADERS.get('file_link'),
@@ -44,14 +43,10 @@ class GoogleTableService:
         )
         target_frame.replace([None, np.nan, "", " "], np.nan, inplace=True)
         result_frame = target_frame.copy()[selected_columns]
-        logger.info(f'Стартовый "дата фрейм": {result_frame}')
         result_frame.dropna(subset=[HEADERS.get('file_link')], inplace=True)
-        logger.info(f'Стартовый "дата фрейм" 2: {result_frame}')
-        result_frame = result_frame[~result_frame['Вопросы'].notnull()]
-        logger.info(f'Стартовый "дата фрейм" 3: {result_frame}')
+        result_frame = result_frame[result_frame['Вопросы'].isnull()]
         result_frame = result_frame[result_frame[HEADERS.get('comments')] != MESSAGES.get('dead_link_error')]
-        logger.info(f'Итоговый "дата фрейм": {len(result_frame)}')
-        logger.info(f'id : {result_frame[HEADERS.get('ids')].head()}')
+        logger.info(f'Размер итогового "дата фрейма": {len(result_frame)}')
         return result_frame
 
     def update_cell_by_row_and_column_name(
