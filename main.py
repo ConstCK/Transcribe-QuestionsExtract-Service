@@ -7,7 +7,7 @@ from utils.constants import MESSAGES
 
 
 async def main():
-    logger.info(MESSAGES.get('start_program'))
+    logger.info(MESSAGES.get('starting_program'))
     await main_service(rows_number=2)
     logger.info(MESSAGES.get('finishing_program'))
 

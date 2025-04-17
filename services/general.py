@@ -1,10 +1,10 @@
 from config import logger
 from services.g_tables import g_tables_service
-from services.transcription import DeadLinkException, transcript_service
+from services.transcription import BadFileException, DeadLinkException, transcript_service
 from utils.constants import HEADERS, MESSAGES
 
 
-async def main_service(rows_number: int):
+async def main_service(rows_number: int = 1000):
     rows = g_tables_service.get_rows_without_questions()[:rows_number]
     for i in rows.values:
         try:
@@ -21,8 +21,13 @@ async def main_service(rows_number: int):
             logger.info(MESSAGES.get('successful_file_transcribing').format(i[3]))
         except DeadLinkException:
             g_tables_service.update_cell_by_row_and_column_name(
-                int(i[3]), HEADERS.get('comments'), MESSAGES.get('dead_link_error')
+                int(i[3]), HEADERS.get('comments'), MESSAGES.get('dead_link_message')
             )
             logger.info(MESSAGES.get('dead_link_error').format(int(i[3])))
+        except BadFileException:
+            g_tables_service.update_cell_by_row_and_column_name(
+                int(i[3]), HEADERS.get('comments'), MESSAGES.get('bad_file_message')
+            )
+            logger.info(MESSAGES.get('bad_file_error').format(int(i[3])))
         except Exception as e:
             logger.info(MESSAGES.get('questions_upload_error').format(e))

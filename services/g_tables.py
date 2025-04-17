@@ -45,8 +45,9 @@ class GoogleTableService:
         result_frame = target_frame.copy()[selected_columns]
         result_frame.dropna(subset=[HEADERS.get('file_link')], inplace=True)
         result_frame = result_frame[result_frame['Вопросы'].isnull()]
-        result_frame = result_frame[result_frame[HEADERS.get('comments')] != MESSAGES.get('dead_link_error')]
-        logger.info(f'Размер итогового "дата фрейма": {len(result_frame)}')
+        result_frame = result_frame[result_frame[HEADERS.get('comments')] != MESSAGES.get('dead_link_message')]
+        result_frame = result_frame[result_frame[HEADERS.get('comments')] != MESSAGES.get('bad_file_message')]
+        logger.info(MESSAGES.get('data_frame_size').format(len(result_frame)))
         return result_frame
 
     def update_cell_by_row_and_column_name(

@@ -11,6 +11,10 @@ class DeadLinkException(Exception):
     pass
 
 
+class BadFileException(Exception):
+    pass
+
+
 class TranscriptService:
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -20,7 +24,16 @@ class TranscriptService:
             language='ru',
         )
 
-    async def _transcribe_file_from_url(self, audio_url: str) -> str:
+    @staticmethod
+    def get_direct_url(yandex_url: str) -> str:
+        url = settings.yandex_cloud_api_url.format(yandex_url)
+        response = requests.get(url)
+        if not response:
+            raise DeadLinkException(MESSAGES.get('dead_link_message'))
+        download_url = response.json().get('href')
+        return download_url
+
+    async def _transcribe_file_from_url(self, audio_url: str) -> str | int | None:
         try:
             deepgram = DeepgramClient(api_key=self.api_key)
 
@@ -34,11 +47,17 @@ class TranscriptService:
             return result
 
         except Exception as e:
-            logger.error(e)
+            if hasattr(e, 'status') and e.status == '400':
+                raise BadFileException(MESSAGES.get('bad_file_message'))
+            else:
+                logger.error(e)
+
 
     @staticmethod
-    async def _extract_questions_from_data(data: str) -> list[str]:
+    async def _extract_questions_from_data(data: str) -> list[str] | None:
         try:
+            if not data:
+                return None
             result = list()
             sentences = re.split(r'[.!]', data)
             modified_sentences = [sentence.strip().replace('\n', ' ')
@@ -59,26 +78,15 @@ class TranscriptService:
         except Exception as e:
             logger.error(e)
 
-    @staticmethod
-    def get_direct_url(yandex_url: str) -> str:
-        url = settings.yandex_cloud_api_url.format(yandex_url)
-        response = requests.get(url)
-        if not response:
-            raise DeadLinkException(MESSAGES.get('direct_link_error', ''))
-        download_url = response.json().get('href')
-        return download_url
-
     async def run_process(
         self,
         audio_url: str | None = None
-    ) -> list[str]:
-        try:
-            data = await self._transcribe_file_from_url(audio_url)
-            questions_pool = await self._extract_questions_from_data(data)
-            return questions_pool
-
-        except Exception as e:
-            logger.error(e)
+    ) -> list[str] | None:
+        data = await self._transcribe_file_from_url(audio_url)
+        # if data == 400:
+        #     raise BadFileException(MESSAGES.get('bad_file_message'))
+        questions_pool = await self._extract_questions_from_data(data)
+        return questions_pool
 
 
 transcript_service = TranscriptService(
