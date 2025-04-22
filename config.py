@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     GOOGLE_ACCOUNT_JSON: str
     GOOGLE_TABLE_ID: str
     DEEPGRAM_API_KEY: str
+    YANDEX_TOKEN: str
 
     @property
     def yandex_cloud_api_url(self):

@@ -1,5 +1,6 @@
 import re
 import requests
+import yadisk
 
 from deepgram import DeepgramClient, PrerecordedOptions
 
@@ -15,9 +16,15 @@ class BadFileException(Exception):
     pass
 
 
+class HugeFileException(Exception):
+    pass
+
+
 class TranscriptService:
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, yandex_token: str):
         self.api_key = api_key
+        self.headers = {"Authorization": f"OAuth {yandex_token}"}
+        self.yandex_url = 'https://cloud-api.yandex.net/v1/disk/public/resources'
         self.transcription_options = PrerecordedOptions(
             model="nova-2",
             smart_format=True,
@@ -33,12 +40,26 @@ class TranscriptService:
         download_url = response.json().get('href')
         return download_url
 
-    async def _transcribe_file_from_url(self, audio_url: str) -> str | int | None:
+    def check_file_size(self, file_url: str) -> bool:
+        response = requests.get(
+            self.yandex_url,
+            params={'public_key': file_url, 'fields': 'size'},
+            headers=self.headers
+        )
+        response.raise_for_status()
+        file_info = response.json()
+        file_size = file_info.get('size')
+        logger.info(MESSAGES.get('file_size').format(file_size // 1024 // 1024))
+        if file_size > 1000000000:
+            raise HugeFileException(MESSAGES.get('big_file_message'))
+        return True
+
+    async def _transcribe_file_from_url(self, file_url: str) -> str | int | None:
         try:
             deepgram = DeepgramClient(api_key=self.api_key)
 
             response = await deepgram.listen.asyncrest.v('1').transcribe_url(
-                {'url': audio_url},
+                {'url': file_url},
                 self.transcription_options,
                 timeout=99999
             )
@@ -51,7 +72,6 @@ class TranscriptService:
                 raise BadFileException(MESSAGES.get('bad_file_message'))
             else:
                 logger.error(e)
-
 
     @staticmethod
     async def _extract_questions_from_data(data: str) -> list[str] | None:
@@ -80,15 +100,15 @@ class TranscriptService:
 
     async def run_process(
         self,
-        audio_url: str | None = None
+        file_url: str | None = None
     ) -> list[str] | None:
-        data = await self._transcribe_file_from_url(audio_url)
-        # if data == 400:
-        #     raise BadFileException(MESSAGES.get('bad_file_message'))
+
+        data = await self._transcribe_file_from_url(file_url)
         questions_pool = await self._extract_questions_from_data(data)
         return questions_pool
 
 
 transcript_service = TranscriptService(
     api_key=settings.DEEPGRAM_API_KEY,
+    yandex_token=settings.YANDEX_TOKEN
 )

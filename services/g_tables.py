@@ -47,6 +47,7 @@ class GoogleTableService:
         result_frame = result_frame[result_frame['Вопросы'].isnull()]
         result_frame = result_frame[result_frame[HEADERS.get('comments')] != MESSAGES.get('dead_link_message')]
         result_frame = result_frame[result_frame[HEADERS.get('comments')] != MESSAGES.get('bad_file_message')]
+        result_frame = result_frame[result_frame[HEADERS.get('comments')] != MESSAGES.get('big_file_message')]
         logger.info(MESSAGES.get('data_frame_size').format(len(result_frame)))
         return result_frame
 
