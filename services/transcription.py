@@ -1,6 +1,5 @@
 import re
 import requests
-import yadisk
 
 from deepgram import DeepgramClient, PrerecordedOptions
 
@@ -21,15 +20,23 @@ class HugeFileException(Exception):
 
 
 class TranscriptService:
-    def __init__(self, api_key: str, yandex_token: str):
+    def __init__(self, api_key: str, yandex_token: str, project_id: str):
         self.api_key = api_key
         self.headers = {"Authorization": f"OAuth {yandex_token}"}
         self.yandex_url = 'https://cloud-api.yandex.net/v1/disk/public/resources'
+        self.deepgram_info_url = f'https://api.deepgram.com/v1/projects/{project_id}/balances'
         self.transcription_options = PrerecordedOptions(
             model="nova-2",
             smart_format=True,
             language='ru',
         )
+
+    async def get_service_info(self):
+        response = requests.get(
+            self.deepgram_info_url,
+            headers={"Authorization": f"Token {self.api_key}"}
+        )
+        logger.info(response.json())
 
     @staticmethod
     def get_direct_url(yandex_url: str) -> str:
@@ -110,5 +117,6 @@ class TranscriptService:
 
 transcript_service = TranscriptService(
     api_key=settings.DEEPGRAM_API_KEY,
-    yandex_token=settings.YANDEX_TOKEN
+    yandex_token=settings.YANDEX_TOKEN,
+    project_id=settings.PROJECT_ID
 )
